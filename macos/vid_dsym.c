@@ -38,6 +38,8 @@ refexport_t	re;
 
 // Console variables that we need to access from this module
 cvar_t		*vid_gamma;
+cvar_t		*vid_blur;
+cvar_t		*vid_offsetmultiplier;
 cvar_t		*vid_ref;			// Name of Refresh DLL loaded
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
@@ -425,6 +427,8 @@ void VID_Init (void)
 	vid_fullscreen = Cvar_Get ("vid_fullscreen", "0", CVAR_ARCHIVE);
 	vid_refresh = Cvar_Get ("vid_refresh", "0", CVAR_NOSET);
 	vid_gamma = Cvar_Get( "vid_gamma", "1", CVAR_ARCHIVE );
+	vid_blur = Cvar_Get("vid_blur", "1", CVAR_ARCHIVE);
+	vid_offsetmultiplier = Cvar_Get("vid_offsetmultiplier", "1", CVAR_ARCHIVE);
 	r_customwidth = Cvar_Get( "r_customwidth", "1024", CVAR_ARCHIVE );
 	r_customheight = Cvar_Get( "r_customheight", "768", CVAR_ARCHIVE );
 	viewsize = Cvar_Get( "viewsize", "100", CVAR_ARCHIVE );

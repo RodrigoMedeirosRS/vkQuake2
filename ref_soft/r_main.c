@@ -143,6 +143,8 @@ cvar_t	*r_lightlevel;	//FIXME HACK
 
 cvar_t	*vid_fullscreen;
 cvar_t	*vid_gamma;
+cvar_t  *vid_offsetmultiplier;
+cvar_t  *vid_blur;
 
 //PGM
 cvar_t	*sw_lockpvs;
@@ -289,6 +291,8 @@ void R_Register(void)
 
 	vid_fullscreen = ri.Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	vid_gamma = ri.Cvar_Get("vid_gamma", "1.0", CVAR_ARCHIVE);
+	vid_offsetmultiplier = ri.Cvar_Get("vid_offsetmultiplier", "1.0", CVAR_ARCHIVE);
+	vid_blur = ri.Cvar_Get("vid_blur", "1.0", CVAR_ARCHIVE);
 
 	ri.Cmd_AddCommand("modellist", Mod_Modellist_f);
 	ri.Cmd_AddCommand("screenshot", R_ScreenShot_f);
@@ -296,6 +300,8 @@ void R_Register(void)
 
 	sw_mode->modified = true; // force us to do mode specific stuff later
 	vid_gamma->modified = true; // force us to rebuild the gamma table later
+	vid_offsetmultiplier->modified = true;
+	vid_blur->modified = true;
 
 	//PGM
 	sw_lockpvs = ri.Cvar_Get("sw_lockpvs", "0", 0);

@@ -139,6 +139,8 @@ cvar_t	*gl_3dlabs_broken;
 
 cvar_t	*vid_fullscreen;
 cvar_t	*vid_gamma;
+cvar_t  *vid_offsetmultiplier;
+cvar_t  *vid_blur;
 cvar_t	*vid_ref;
 
 /*
@@ -1046,7 +1048,9 @@ void R_Register( void )
 	gl_3dlabs_broken = ri.Cvar_Get( "gl_3dlabs_broken", "1", CVAR_ARCHIVE );
 
 	vid_fullscreen = ri.Cvar_Get( "vid_fullscreen", "0", CVAR_ARCHIVE );
-	vid_gamma = ri.Cvar_Get( "vid_gamma", "1.0", CVAR_ARCHIVE );
+	vid_gamma = ri.Cvar_Get( "vid_gamma", "1", CVAR_ARCHIVE );
+	vid_offsetmultiplier = ri.Cvar_Get("vid_offsetmultiplier", "1", CVAR_ARCHIVE);
+	vid_blur = ri.Cvar_Get("vid_blur", "1", CVAR_ARCHIVE);
 	vid_ref = ri.Cvar_Get( "vid_ref", "soft", CVAR_ARCHIVE );
 
 	ri.Cmd_AddCommand( "imagelist", GL_ImageList_f );

@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t *vid_ref;
 extern cvar_t *vid_fullscreen;
 extern cvar_t *vid_gamma;
+extern cvar_t *vid_offsetmultiplier;
+extern cvar_t *vid_blur;
 extern cvar_t *vid_hudscale;
 extern cvar_t *scr_viewsize;
 
@@ -80,6 +82,8 @@ static menuslider_s		s_tq_slider;
 static menuslider_s		s_tqvk_slider;
 static menuslider_s		s_screensize_slider[3];
 static menuslider_s		s_brightness_slider[3];
+static menuslider_s		s_chromatic_slider[3];
+static menuslider_s		s_blur_slider[3];
 static menulist_s  		s_fs_box[3];
 static menulist_s  		s_stipple_box;
 static menulist_s  		s_paletted_texture_box;
@@ -145,6 +149,44 @@ static void BrightnessCallback( void *s )
 	}
 }
 
+static void BlurCallback(void* s)
+{
+	menuslider_s* slider = (menuslider_s*)s;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		s_blur_slider[i].curvalue = s_blur_slider[s_current_menu_index].curvalue;
+	}
+
+	if (Q_stricmp(vid_ref->string, "soft") == 0 ||
+		Q_stricmp(vid_ref->string, "softx") == 0)
+	{
+		float blur = (0.8 - (slider->curvalue / 10.0 - 0.5)) + 0.5;
+
+		Cvar_SetValue("vid_blur", blur);
+	}
+}
+
+static void OffsetCallback(void* s)
+{
+	menuslider_s* slider = (menuslider_s*)s;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		s_chromatic_slider[i].curvalue = s_chromatic_slider[s_current_menu_index].curvalue;
+	}
+
+	if (Q_stricmp(vid_ref->string, "soft") == 0 ||
+		Q_stricmp(vid_ref->string, "softx") == 0)
+	{
+		float offset = (0.8 - (slider->curvalue / 10.0 - 0.5)) + 0.5;
+
+		Cvar_SetValue("vid_offsetmultiplier", offset);
+	}
+}
+
 static void ResetDefaults( void *unused )
 {
 	VID_MenuInit();
@@ -153,6 +195,8 @@ static void ResetDefaults( void *unused )
 static void ApplyChanges( void *unused )
 {
 	float gamma;
+	float offset;
+	float blur;
 	int i;
 
 	/*
@@ -162,6 +206,8 @@ static void ApplyChanges( void *unused )
 	{
 		s_fs_box[i].curvalue = s_fs_box[s_current_menu_index].curvalue;
 		s_brightness_slider[i].curvalue = s_brightness_slider[s_current_menu_index].curvalue;
+		s_chromatic_slider[i].curvalue = s_chromatic_slider[s_current_menu_index].curvalue;
+		s_blur_slider[i].curvalue = s_blur_slider[s_current_menu_index].curvalue;
 		s_ref_list[i].curvalue = s_ref_list[s_current_menu_index].curvalue;
 	}
 
@@ -169,8 +215,12 @@ static void ApplyChanges( void *unused )
 	** invert sense so greater = brighter, and scale to a range of 0.5 to 1.3
 	*/
 	gamma = ( 0.8 - ( s_brightness_slider[s_current_menu_index].curvalue/10.0 - 0.5 ) ) + 0.5;
+	blur = (0.8 - (s_blur_slider[s_current_menu_index].curvalue / 10.0 - 0.5)) + 0.5;
+	offset = (0.8 - (s_chromatic_slider[s_current_menu_index].curvalue / 10.0 - 0.5)) + 0.5;
 
 	Cvar_SetValue( "vid_gamma", gamma );
+	Cvar_SetValue("vid_offsetmultiplier", blur);
+	Cvar_SetValue("vid_blur", offset);
 	Cvar_SetValue( "sw_stipplealpha", s_stipple_box.curvalue );
 	Cvar_SetValue( "gl_picmip", 3 - s_tq_slider.curvalue );
 	Cvar_SetValue( "vid_fullscreen", s_fs_box[s_current_menu_index].curvalue );
@@ -450,6 +500,24 @@ void VID_MenuInit( void )
 		s_brightness_slider[i].maxvalue = 13;
 		s_brightness_slider[i].curvalue = ( 1.3 - vid_gamma->value + 0.5 ) * 10;
 
+		s_blur_slider[i].generic.type = MTYPE_SLIDER;
+		s_blur_slider[i].generic.x = 0;
+		s_blur_slider[i].generic.y = 30 * vid_hudscale->value;
+		s_blur_slider[i].generic.name = "blur";
+		s_blur_slider[i].generic.callback = BlurCallback;
+		s_blur_slider[i].minvalue = 5;
+		s_blur_slider[i].maxvalue = 26;
+		s_blur_slider[i].curvalue = (2.6 - vid_blur->value + 0.5) * 10;
+
+		s_chromatic_slider[i].generic.type = MTYPE_SLIDER;
+		s_chromatic_slider[i].generic.x = 0;
+		s_chromatic_slider[i].generic.y = 30 * vid_hudscale->value;
+		s_chromatic_slider[i].generic.name = "chromaticaberration";
+		s_chromatic_slider[i].generic.callback = OffsetCallback;
+		s_chromatic_slider[i].minvalue = 5;
+		s_chromatic_slider[i].maxvalue = 26;
+		s_chromatic_slider[i].curvalue = (2.6 - vid_offsetmultiplier->value + 0.5) * 10;
+
 		s_fs_box[i].generic.type = MTYPE_SPINCONTROL;
 		s_fs_box[i].generic.x	= 0;
 		s_fs_box[i].generic.y	= 40 * vid_hudscale->value;
@@ -578,6 +646,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_software_menu, ( void * ) &s_mode_list[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_screensize_slider[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_brightness_slider[SOFTWARE_MENU] );
+	Menu_AddItem( &s_software_menu, ( void * ) &s_blur_slider[SOFTWARE_MENU]);
+	Menu_AddItem( &s_software_menu, ( void * ) &s_chromatic_slider[SOFTWARE_MENU]);
 	Menu_AddItem( &s_software_menu, ( void * ) &s_fs_box[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_stipple_box );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_windowed_mouse );
@@ -586,6 +656,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_mode_list[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_screensize_slider[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_brightness_slider[OPENGL_MENU] );
+	Menu_AddItem( &s_opengl_menu, ( void * ) &s_blur_slider[OPENGL_MENU]);
+	Menu_AddItem( &s_opengl_menu, ( void * ) &s_chromatic_slider[OPENGL_MENU]);
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_fs_box[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_tq_slider );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_paletted_texture_box );
@@ -594,6 +666,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_mode_list[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_screensize_slider[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_brightness_slider[VULKAN_MENU] );
+	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_blur_slider[VULKAN_MENU]);
+	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_chromatic_slider[VULKAN_MENU]);
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_fs_box[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_tqvk_slider );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_msaa_mode );

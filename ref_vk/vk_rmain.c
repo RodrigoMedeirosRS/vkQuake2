@@ -125,6 +125,8 @@ cvar_t	*vk_fullscreen_exclusive;
 
 cvar_t	*vid_fullscreen;
 cvar_t	*vid_gamma;
+cvar_t  *vid_offsetmultiplier;
+cvar_t  *vid_blur;
 cvar_t	*vid_ref;
 cvar_t	*vid_refresh;
 cvar_t	*viewsize;
@@ -969,7 +971,7 @@ void R_SetVulkan2D (void)
 	// skip this step if we're in player config screen since it uses RP_UI and draws directly to swapchain
 	if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
 	{
-		float pushConsts[] = { vk_postprocess->value, vid_gamma->value };
+		float pushConsts[] = { vk_postprocess->value, vid_gamma->value, vid_offsetmultiplier->value, vid_blur->value };
 		vkCmdPushConstants(vk_activeCmdbuffer, vk_postprocessPipeline.layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), pushConsts);
 		vkCmdBindDescriptorSets(vk_activeCmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_postprocessPipeline.layout, 0, 1, &vk_colorbufferWarp.descriptorSet, 0, NULL);
 		QVk_BindPipeline(&vk_postprocessPipeline);
@@ -1088,6 +1090,8 @@ void R_Register( void )
 
 	vid_fullscreen = ri.Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	vid_gamma = ri.Cvar_Get("vid_gamma", "1.0", CVAR_ARCHIVE);
+	vid_blur = ri.Cvar_Get("vid_blur", "1.0", CVAR_ARCHIVE);
+	vid_offsetmultiplier = ri.Cvar_Get("vid_offsetmultiplier", "1.0", CVAR_ARCHIVE);
 	vid_ref = ri.Cvar_Get("vid_ref", "soft", CVAR_ARCHIVE);
 	vid_refresh = ri.Cvar_Get("vid_refresh", "0", CVAR_NOSET);
 	viewsize = ri.Cvar_Get("viewsize", "100", CVAR_ARCHIVE);
@@ -1112,6 +1116,8 @@ qboolean R_SetMode (void)
 	fullscreen = vid_fullscreen->value;
 
 	vid_gamma->modified = false;
+	vid_blur->modified = false;
+	vid_offsetmultiplier->modified = false;
 	vid_fullscreen->modified = false;
 	vk_mode->modified = false;
 	vk_msaa->modified = false;
@@ -1301,8 +1307,9 @@ static qboolean R_ShouldRestart()
 {
 	qboolean fs_exclusive_modified = vid_fullscreen->value && vk_fullscreen_exclusive->modified;
 	return	vk_restart || vk_validation->modified || vk_msaa->modified || vk_clear->modified ||
-			vk_picmip->modified || vid_gamma->modified || vk_mip_nearfilter->modified ||
-			vk_sampleshading->modified || vk_vsync->modified || vk_modulate->modified
+			vk_picmip->modified || vid_gamma->modified || vid_blur->modified || 
+			vid_offsetmultiplier ->modified || vk_mip_nearfilter->modified || 
+		    vk_sampleshading->modified || vk_vsync->modified || vk_modulate->modified
 #ifdef FULL_SCREEN_EXCLUSIVE_ENABLED
 			|| fs_exclusive_modified
 #endif
@@ -1328,6 +1335,8 @@ void R_EndFrame( void )
 		vk_clear->modified = false;
 		vk_picmip->modified = false;
 		vid_gamma->modified = false;
+		vid_blur->modified = false;
+		vid_offsetmultiplier->modified = false;
 		vk_mip_nearfilter->modified = false;
 		vk_sampleshading->modified = false;
 		vk_vsync->modified = false;

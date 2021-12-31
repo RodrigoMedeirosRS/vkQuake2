@@ -1,0 +1,14 @@
+{
+  "files.exclude": {
+    "Quake2\\quake2.exe": true,
+    "Quake2\\ref_gl.dll": true,
+    "Quake2\\ref_gl.exp": true,
+    "Quake2\\ref_vk.lib": true,
+    "Quake2\\ref_vk.exp": true,
+    "Quake2\\ref_vk.dll": true,
+    "Quake2\\ref_soft.lib": true,
+    "Quake2\\ref_soft.exp": true,
+    "Quake2\\ref_soft.dll": true,
+    "Quake2\\ref_gl.lib": true
+  }
+}

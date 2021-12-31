@@ -612,7 +612,9 @@ extern cvar_t   *r_speeds;
 extern cvar_t   *r_lightlevel;  //FIXME HACK
 
 extern cvar_t	*vid_fullscreen;
-extern	cvar_t	*vid_gamma;
+extern cvar_t	*vid_gamma;
+extern cvar_t	*vid_offsetmultiplier;
+extern cvar_t	*vid_blur;
 
 extern cvar_t  *r_customwidth;
 extern cvar_t  *r_customheight;

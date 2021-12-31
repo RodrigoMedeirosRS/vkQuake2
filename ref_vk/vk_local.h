@@ -212,6 +212,8 @@ extern	cvar_t	*vk_fullscreen_exclusive;
 
 extern	cvar_t	*vid_fullscreen;
 extern	cvar_t	*vid_gamma;
+extern	cvar_t  *vid_offsetmultiplier;
+extern	cvar_t  *vid_blur;
 
 extern	cvar_t	*intensity;
 

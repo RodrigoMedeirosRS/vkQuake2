@@ -5,6 +5,8 @@ layout(push_constant) uniform PushConstant
 {
 	float postprocess;
 	float gamma;
+	float offsetmultiplier;
+	float blur;
 } pc;
 
 layout(set = 0, binding = 0) uniform sampler2D sTexture;
@@ -14,11 +16,20 @@ layout(location = 0) out vec4 fragmentColor;
 
 void main() 
 {
-	// apply any additional world-only postprocessing effects here (if enabled)
 	if (pc.postprocess > 0.0)
 	{
-		//gamma + color intensity bump
-		fragmentColor = vec4(pow(texture(sTexture, texCoord).rgb * 1.5, vec3(pc.gamma)), 1.0);
+		float distanceToCenter = distance(texCoord, vec2(0.5, 0.5));
+		//float distortionAmount = pc.offsetmultiplier * distanceToCenter * float(2);
+		float distortionAmount = 1 * distanceToCenter * float(2);
+    	float dist = float(distance(texCoord, vec2(0,5)) * 0.001);
+    
+		fragmentColor.r = pow(texture(sTexture,texCoord + vec2(distortionAmount * dist, 0.0), 1.5).r * 1.5, pc.gamma);  
+		fragmentColor.g = pow(texture(sTexture,texCoord, 1.5).g * 1.5, pc.gamma);
+		fragmentColor.b = pow(texture(sTexture,texCoord - vec2(distortionAmount * dist, 0.0), 1.5).b * 1.5, pc.gamma);
+
+		//fragmentColor.r = pow(texture(sTexture,texCoord + vec2(distortionAmount * dist, 0.0), pc.blur).r * 1.5, pc.gamma);  
+		//fragmentColor.g = pow(texture(sTexture,texCoord, pc.blur).g * 1.5, pc.gamma);
+		//fragmentColor.b = pow(texture(sTexture,texCoord - vec2(distortionAmount * dist, 0.0), pc.blur).b * 1.5, pc.gamma);
 	}
 	else
 	{

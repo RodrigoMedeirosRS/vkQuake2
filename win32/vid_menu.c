@@ -31,6 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t *vid_ref;
 extern cvar_t *vid_fullscreen;
 extern cvar_t *vid_gamma;
+extern cvar_t* vid_offsetmultiplier;
+extern cvar_t* vid_blur;
 extern cvar_t *vid_hudscale;
 extern cvar_t *scr_viewsize;
 
@@ -81,6 +83,8 @@ static menuslider_s		s_tq_slider;
 static menuslider_s		s_tqvk_slider;
 static menuslider_s		s_screensize_slider[3];
 static menuslider_s		s_brightness_slider[3];
+static menuslider_s		s_chromatic_slider[3];
+static menuslider_s		s_blur_slider[3];
 static menulist_s  		s_fs_box[3];
 static menulist_s  		s_stipple_box;
 static menulist_s  		s_paletted_texture_box;
@@ -147,6 +151,42 @@ static void BrightnessCallback( void *s )
 	}
 }
 
+static void BlurCallback(void* s)
+{
+	menuslider_s* slider = (menuslider_s*)s;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		s_blur_slider[i].curvalue = s_blur_slider[s_current_menu_index].curvalue;
+	}
+
+	if (stricmp(vid_ref->string, "soft") == 0)
+	{
+		float blur = (0.8 - (slider->curvalue / 10.0 - 0.5)) + 0.5;
+
+		Cvar_SetValue("vid_blur", blur);
+	}
+}
+
+static void ChromaticAberrationCallback(void* s)
+{
+	menuslider_s* slider = (menuslider_s*)s;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		s_chromatic_slider[i].curvalue = s_chromatic_slider[s_current_menu_index].curvalue;
+	}
+
+	if (stricmp(vid_ref->string, "soft") == 0)
+	{
+		float chroma = (0.8 - (slider->curvalue / 10.0 - 0.5)) + 0.5;
+
+		Cvar_SetValue("vid_offsetmultiplier", chroma);
+	}
+}
+
 static void ResetDefaults( void *unused )
 {
 	VID_MenuInit();
@@ -155,6 +195,8 @@ static void ResetDefaults( void *unused )
 static void ApplyChanges( void *unused )
 {
 	float gamma;
+	float blur;
+	float chroma;
 	int i;
 
 	/*
@@ -164,6 +206,8 @@ static void ApplyChanges( void *unused )
 	{
 		s_fs_box[i].curvalue = s_fs_box[s_current_menu_index].curvalue;
 		s_brightness_slider[i].curvalue = s_brightness_slider[s_current_menu_index].curvalue;
+		s_chromatic_slider[i].curvalue = s_chromatic_slider[s_current_menu_index].curvalue;
+		s_blur_slider[i].curvalue = s_blur_slider[s_current_menu_index].curvalue;
 		s_ref_list[i].curvalue = s_ref_list[s_current_menu_index].curvalue;
 	}
 
@@ -171,8 +215,12 @@ static void ApplyChanges( void *unused )
 	** invert sense so greater = brighter, and scale to a range of 0.5 to 1.3
 	*/
 	gamma = ( 0.8 - ( s_brightness_slider[s_current_menu_index].curvalue/10.0 - 0.5 ) ) + 0.5;
+	blur = (0.8 - (s_blur_slider[s_current_menu_index].curvalue / 10.0 - 0.5)) + 0.5;
+	chroma = (0.8 - (s_chromatic_slider[s_current_menu_index].curvalue / 10.0 - 0.5)) + 0.5;
 
 	Cvar_SetValue( "vid_gamma", gamma );
+	Cvar_SetValue("vid_offsetmultiplier", chroma);
+	Cvar_SetValue("vid_blur", blur);
 	Cvar_SetValue( "sw_stipplealpha", s_stipple_box.curvalue );
 	Cvar_SetValue( "gl_picmip", 3 - s_tq_slider.curvalue );
 	Cvar_SetValue( "vid_fullscreen", s_fs_box[s_current_menu_index].curvalue );
@@ -461,9 +509,27 @@ void VID_MenuInit( void )
 		s_brightness_slider[i].maxvalue = 13;
 		s_brightness_slider[i].curvalue = ( 1.3 - vid_gamma->value + 0.5 ) * 10;
 
+		s_blur_slider[i].generic.type = MTYPE_SLIDER;
+		s_blur_slider[i].generic.x = 0;
+		s_blur_slider[i].generic.y = 40 * vid_hudscale->value;
+		s_blur_slider[i].generic.name = "blur";
+		s_blur_slider[i].generic.callback = BlurCallback;
+		s_blur_slider[i].minvalue = 5;
+		s_blur_slider[i].maxvalue = 26;
+		s_blur_slider[i].curvalue = (1.3 - vid_blur->value + 0.5) * 10;
+
+		s_chromatic_slider[i].generic.type = MTYPE_SLIDER;
+		s_chromatic_slider[i].generic.x = 0;
+		s_chromatic_slider[i].generic.y = 50 * vid_hudscale->value;
+		s_chromatic_slider[i].generic.name = "chromatic aberration";
+		s_chromatic_slider[i].generic.callback = ChromaticAberrationCallback;
+		s_chromatic_slider[i].minvalue = 5;
+		s_chromatic_slider[i].maxvalue = 26;
+		s_chromatic_slider[i].curvalue = (1.3 - vid_offsetmultiplier->value + 0.5) * 10;
+
 		s_fs_box[i].generic.type = MTYPE_SPINCONTROL;
 		s_fs_box[i].generic.x	= 0;
-		s_fs_box[i].generic.y	= 40 * vid_hudscale->value;
+		s_fs_box[i].generic.y	= 60 * vid_hudscale->value;
 		s_fs_box[i].generic.name	= "fullscreen";
 		s_fs_box[i].itemnames = yesno_names;
 		s_fs_box[i].curvalue = vid_fullscreen->value;
@@ -471,32 +537,32 @@ void VID_MenuInit( void )
 		s_apply_action[i].generic.type = MTYPE_ACTION;
 		s_apply_action[i].generic.name = "apply changes";
 		s_apply_action[i].generic.x = 0;
-		s_apply_action[i].generic.y = 170 * vid_hudscale->value;
+		s_apply_action[i].generic.y = 190 * vid_hudscale->value;
 		s_apply_action[i].generic.callback = ApplyChanges;
 
 		s_defaults_action[i].generic.type = MTYPE_ACTION;
 		s_defaults_action[i].generic.name = "reset to defaults";
 		s_defaults_action[i].generic.x    = 0;
-		s_defaults_action[i].generic.y    = 180 * vid_hudscale->value;
+		s_defaults_action[i].generic.y    = 200 * vid_hudscale->value;
 		s_defaults_action[i].generic.callback = ResetDefaults;
 
 		s_cancel_action[i].generic.type = MTYPE_ACTION;
 		s_cancel_action[i].generic.name = "cancel";
 		s_cancel_action[i].generic.x    = 0;
-		s_cancel_action[i].generic.y    = 190 * vid_hudscale->value;
+		s_cancel_action[i].generic.y    = 210 * vid_hudscale->value;
 		s_cancel_action[i].generic.callback = CancelChanges;
 	}
 
 	s_stipple_box.generic.type = MTYPE_SPINCONTROL;
 	s_stipple_box.generic.x	= 0;
-	s_stipple_box.generic.y	= 60 * vid_hudscale->value;
+	s_stipple_box.generic.y	= 80 * vid_hudscale->value;
 	s_stipple_box.generic.name	= "stipple alpha";
 	s_stipple_box.curvalue = sw_stipplealpha->value;
 	s_stipple_box.itemnames = yesno_names;
 
 	s_tq_slider.generic.type	= MTYPE_SLIDER;
 	s_tq_slider.generic.x		= 0;
-	s_tq_slider.generic.y		= 60 * vid_hudscale->value;
+	s_tq_slider.generic.y		= 80 * vid_hudscale->value;
 	s_tq_slider.generic.name	= "texture quality";
 	s_tq_slider.minvalue = 0;
 	s_tq_slider.maxvalue = 3;
@@ -504,7 +570,7 @@ void VID_MenuInit( void )
 
 	s_tqvk_slider.generic.type = MTYPE_SLIDER;
 	s_tqvk_slider.generic.x = 0;
-	s_tqvk_slider.generic.y = 60 * vid_hudscale->value;
+	s_tqvk_slider.generic.y = 80 * vid_hudscale->value;
 	s_tqvk_slider.generic.name = "texture quality";
 	s_tqvk_slider.minvalue = 0;
 	s_tqvk_slider.maxvalue = 3;
@@ -512,7 +578,7 @@ void VID_MenuInit( void )
 
 	s_paletted_texture_box.generic.type = MTYPE_SPINCONTROL;
 	s_paletted_texture_box.generic.x	= 0;
-	s_paletted_texture_box.generic.y	= 70 * vid_hudscale->value;
+	s_paletted_texture_box.generic.y	= 90 * vid_hudscale->value;
 	s_paletted_texture_box.generic.name	= "8-bit textures";
 	s_paletted_texture_box.itemnames = yesno_names;
 	s_paletted_texture_box.curvalue = gl_ext_palettedtexture->value;
@@ -520,20 +586,20 @@ void VID_MenuInit( void )
 	s_msaa_mode.generic.type = MTYPE_SPINCONTROL;
 	s_msaa_mode.generic.name = "multisampling";
 	s_msaa_mode.generic.x = 0;
-	s_msaa_mode.generic.y = 70 * vid_hudscale->value;
+	s_msaa_mode.generic.y = 90 * vid_hudscale->value;
 	s_msaa_mode.itemnames = msaa_modes;
 	s_msaa_mode.curvalue = vk_msaa->value;
 
 	s_finish_box.generic.type = MTYPE_SPINCONTROL;
 	s_finish_box.generic.x	= 0;
-	s_finish_box.generic.y	= 80 * vid_hudscale->value;
+	s_finish_box.generic.y	= 100 * vid_hudscale->value;
 	s_finish_box.generic.name	= "sync every frame";
 	s_finish_box.curvalue = gl_finish->value;
 	s_finish_box.itemnames = yesno_names;
 
 	s_vkfinish_box.generic.type = MTYPE_SPINCONTROL;
 	s_vkfinish_box.generic.x = 0;
-	s_vkfinish_box.generic.y = 80 * vid_hudscale->value;
+	s_vkfinish_box.generic.y = 100 * vid_hudscale->value;
 	s_vkfinish_box.generic.name = "sync every frame";
 	s_vkfinish_box.curvalue = vk_finish->value;
 	s_vkfinish_box.itemnames = yesno_names;
@@ -541,21 +607,21 @@ void VID_MenuInit( void )
 	s_sampleshading.generic.type = MTYPE_SPINCONTROL;
 	s_sampleshading.generic.name = "sample shading";
 	s_sampleshading.generic.x = 0;
-	s_sampleshading.generic.y = 90 * vid_hudscale->value;
+	s_sampleshading.generic.y = 110 * vid_hudscale->value;
 	s_sampleshading.itemnames = yesno_names;
 	s_sampleshading.curvalue = vk_sampleshading->value > 0 ? 1 : 0;
 
 	s_aniso_filter.generic.type = MTYPE_SPINCONTROL;
 	s_aniso_filter.generic.name = "anisotropic filtering";
 	s_aniso_filter.generic.x = 0;
-	s_aniso_filter.generic.y = 100 * vid_hudscale->value;
+	s_aniso_filter.generic.y = 120 * vid_hudscale->value;
 	s_aniso_filter.itemnames = yesno_names;
 	s_aniso_filter.curvalue = vk_aniso->value > 0 ? 1 : 0;
 
 	s_texture_filter.generic.type = MTYPE_SPINCONTROL;
 	s_texture_filter.generic.name = "texture filtering";
 	s_texture_filter.generic.x = 0;
-	s_texture_filter.generic.y = 110 * vid_hudscale->value;
+	s_texture_filter.generic.y = 130 * vid_hudscale->value;
 	s_texture_filter.itemnames = filter_modes;
 	s_texture_filter.curvalue = 0;
 	if ( !Q_stricmp( vk_texturemode->string, "VK_LINEAR" ) )
@@ -568,7 +634,7 @@ void VID_MenuInit( void )
 	s_lmap_texture_filter.generic.type = MTYPE_SPINCONTROL;
 	s_lmap_texture_filter.generic.name = "lightmap filtering";
 	s_lmap_texture_filter.generic.x = 0;
-	s_lmap_texture_filter.generic.y = 120 * vid_hudscale->value;
+	s_lmap_texture_filter.generic.y = 140 * vid_hudscale->value;
 	s_lmap_texture_filter.itemnames = filter_modes;
 	s_lmap_texture_filter.curvalue = 0;
 	if ( !Q_stricmp(vk_lmaptexturemode->string, "VK_LINEAR") )
@@ -581,21 +647,21 @@ void VID_MenuInit( void )
 	s_vsync.generic.type = MTYPE_SPINCONTROL;
 	s_vsync.generic.name = "vertical sync";
 	s_vsync.generic.x = 0;
-	s_vsync.generic.y = 130 * vid_hudscale->value;
+	s_vsync.generic.y = 150 * vid_hudscale->value;
 	s_vsync.itemnames = yesno_names;
 	s_vsync.curvalue = vk_vsync->value > 0 ? 1 : 0;
 
 	s_postprocess.generic.type = MTYPE_SPINCONTROL;
 	s_postprocess.generic.name = "postprocessing";
 	s_postprocess.generic.x = 0;
-	s_postprocess.generic.y = 140 * vid_hudscale->value;
+	s_postprocess.generic.y = 160 * vid_hudscale->value;
 	s_postprocess.itemnames = yesno_names;
 	s_postprocess.curvalue = vk_postprocess->value > 0 ? 1 : 0;
 
 	s_exclusive_fullscreen.generic.type = MTYPE_SPINCONTROL;
 	s_exclusive_fullscreen.generic.name = "exclusive fullscreen";
 	s_exclusive_fullscreen.generic.x = 0;
-	s_exclusive_fullscreen.generic.y = 150 * vid_hudscale->value;
+	s_exclusive_fullscreen.generic.y = 170 * vid_hudscale->value;
 	s_exclusive_fullscreen.itemnames = yesno_names;
 	s_exclusive_fullscreen.curvalue = vk_fullscreen_exclusive->value > 0 ? 1 : 0;
 
@@ -603,6 +669,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_software_menu, ( void * ) &s_mode_list[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_screensize_slider[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_brightness_slider[SOFTWARE_MENU] );
+	Menu_AddItem( &s_software_menu, ( void * ) &s_blur_slider[SOFTWARE_MENU]);
+	Menu_AddItem( &s_software_menu, ( void * ) &s_chromatic_slider[SOFTWARE_MENU]);
 	Menu_AddItem( &s_software_menu, ( void * ) &s_fs_box[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_stipple_box );
 
@@ -610,6 +678,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_mode_list[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_screensize_slider[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_brightness_slider[OPENGL_MENU] );
+	Menu_AddItem( &s_opengl_menu, ( void * ) &s_blur_slider[OPENGL_MENU]);
+	Menu_AddItem( &s_opengl_menu, ( void * ) &s_chromatic_slider[OPENGL_MENU]);
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_fs_box[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_tq_slider );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_paletted_texture_box );
@@ -619,6 +689,8 @@ void VID_MenuInit( void )
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_mode_list[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_screensize_slider[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_brightness_slider[VULKAN_MENU] );
+	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_blur_slider[VULKAN_MENU] );
+	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_chromatic_slider[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_fs_box[VULKAN_MENU] );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_tqvk_slider );
 	Menu_AddItem( &s_vulkan_menu, ( void * ) &s_msaa_mode );
