@@ -971,7 +971,7 @@ void R_SetVulkan2D (void)
 	// skip this step if we're in player config screen since it uses RP_UI and draws directly to swapchain
 	if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
 	{
-		float pushConsts[] = { vk_postprocess->value, vid_gamma->value, vid_offsetmultiplier->value, vid_blur->value };
+		float pushConsts[] = { vk_postprocess->value, vid_gamma->value, vid_offsetmultiplier->value, vid_blur->value, vk_viewport.width, vk_viewport.height };
 		vkCmdPushConstants(vk_activeCmdbuffer, vk_postprocessPipeline.layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), pushConsts);
 		vkCmdBindDescriptorSets(vk_activeCmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_postprocessPipeline.layout, 0, 1, &vk_colorbufferWarp.descriptorSet, 0, NULL);
 		QVk_BindPipeline(&vk_postprocessPipeline);
