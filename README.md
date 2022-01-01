@@ -133,7 +133,7 @@ The following commands are available when using the Vulkan renderer:
 | `vk_lightmap`           | Display lightmaps. (default: `0`)                          |
 | `vk_aniso`              | Toggle anisotropic filtering. (default: `1`)               |
 | `vk_vsync`              | Toggle vertical sync. (default: `0`)                       |
-| `vk_postprocess`        | Toggle additional color/gamma correction. (default: `1`)   |
+| `vk_postprocess`        | Toggle additional color/gamma correction, chromatic aberration, guassiam blur and bloom. (default: `1`)   |
 | `vk_underwater`         | Toggle player vision warp when underwater. (default: `1`)  |
 | `vk_restart`            | Recreate entire Vulkan subsystem.                          |
 | `vk_mip_nearfilter`     | Use nearest-neighbor filtering for mipmaps. (default: `0`) |
